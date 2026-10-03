@@ -369,101 +369,31 @@
             return `${Math.round(amount).toLocaleString('en-US')} FCFA`;
         }
 
-        // Mock Database of Restaurants & Menus
-        const restaurants = [
-            {
-                id: 1,
-                name: "Gourmet Burger Craft",
-                category: "Burger",
-                rating: 4.9,
-                reviews: "1.2k",
-                time: "18-25 min",
-                deliveryFee: "Free",
-                image: "images/burger-hero.jpg",
-                tag: "Bestseller",
-                menu: [
-                    { id: 101, name: "Truffle Swiss Smash Burger", desc: "Double Angus beef patty, melted swiss cheese, wild truffle aioli & caramelized onions.", price: 9000, image: "images/burger-hero.jpg" },
-                    { id: 102, name: "Crispy Bacon Fire Burger", desc: "Smoked bacon, spicy jalapeño relish, cheddar, and chipotle mayo.", price: 8100, image: "images/item-102.jpg" },
-                    { id: 103, name: "Loaded Truffle Fries", desc: "Hand-cut fries tossed in truffle oil, parmesan cheese, and fresh parsley.", price: 4200, image: "images/item-103.jpg" },
-                    { id: 104, name: "Classic Artisan Milkshake", desc: "Madagascar vanilla bean soft serve blended with rich whole milk.", price: 3600, image: "images/item-104.jpg" }
-                ]
-            },
-            {
-                id: 2,
-                name: "Napoli Wood-Fired Pizza",
-                category: "Pizza",
-                rating: 4.8,
-                reviews: "980",
-                time: "20-28 min",
-                deliveryFee: "1,200 FCFA",
-                image: "images/pizza-hero.jpg",
-                tag: "Authentic Italian",
-                menu: [
-                    { id: 201, name: "Margherita D.O.P.", desc: "San Marzano tomatoes, fresh fior di latte mozzarella, basil leaves, extra virgin olive oil.", price: 9900, image: "images/item-201.jpg" },
-                    { id: 202, name: "Spicy Pepperoni Diablo", desc: "Calabrian hot honey, artisan spicy salami, mozzarella, and crushed tomatoes.", price: 11400, image: "images/item-202.jpg" },
-                    { id: 203, name: "Garlic Parmesan Focaccia", desc: "Fresh baked crust brushed with roasted garlic butter and rosemary.", price: 4500, image: "images/item-203.jpg" }
-                ]
-            },
-            {
-                id: 3,
-                name: "Sakura Ramen & Sushi Bar",
-                category: "Asian",
-                rating: 4.9,
-                reviews: "2.1k",
-                time: "15-22 min",
-                deliveryFee: "Free",
-                image: "images/asian-hero.jpg",
-                tag: "Chef's Choice",
-                menu: [
-                    { id: 301, name: "Tonkotsu Black Ramen", desc: "24-hour simmered pork broth, chashu pork belly, ajitama egg, black garlic oil.", price: 10500, image: "images/asian-hero.jpg" },
-                    { id: 302, name: "Dragon Roll (8 pcs)", desc: "Tempura shrimp, avocado inside, topped with fresh unagi eel and sweet soy reduction.", price: 11400, image: "images/item-302.jpg" },
-                    { id: 303, name: "Spicy Tuna Crispy Rice", desc: "Pan-crisped sushi rice cakes topped with spicy minced ahi tuna and jalapeño.", price: 8700, image: "images/item-303.jpg" }
-                ]
-            },
-            {
-                id: 4,
-                name: "Greenleaf Organic Bowls",
-                category: "Healthy",
-                rating: 4.7,
-                reviews: "640",
-                time: "15-20 min",
-                deliveryFee: "600 FCFA",
-                image: "images/healthy-hero.jpg",
-                tag: "Superfoods",
-                menu: [
-                    { id: 401, name: "Avocado Power Green Bowl", desc: "Quinoa, kale, avocado, roasted chickpeas, cucumber, lemon tahini dressing.", price: 8400, image: "images/item-401.jpg" },
-                    { id: 402, name: "Teriyaki Salmon Poké Bowl", desc: "Fresh sashimi grade salmon, edamame, pickled ginger, sesame seeds, sushi rice.", price: 10200, image: "images/item-402.jpg" }
-                ]
-            },
-            {
-                id: 5,
-                name: "Le Petit Paris Bakery",
-                category: "Dessert",
-                rating: 4.9,
-                reviews: "850",
-                time: "12-18 min",
-                deliveryFee: "Free",
-                image: "images/dessert-hero.jpg",
-                tag: "Artisanal Pastries",
-                menu: [
-                    { id: 501, name: "Almond Butter Croissant", desc: "Flaky all-butter croissant filled with sweet almond frangipane cream and sliced almonds.", price: 3300, image: "images/item-501.jpg" },
-                    { id: 502, name: "Madagascar Vanilla Eclair", desc: "Choux pastry filled with rich vanilla bean custard and dipped in dark chocolate glaze.", price: 3600, image: "images/item-502.jpg" }
-                ]
-            }
-        ];
+        // Restaurants & menus now live in the backend (see /api/restaurants, /lib/db.js) so an
+        // admin can change them for everyone — this is populated by loadRestaurants() at startup.
+        let restaurants = [];
 
-        // Flat lookup of every menu item by id, used to refresh quantity controls anywhere on the page
-        const allMenuItemsById = {};
-        restaurants.forEach(r => r.menu.forEach(item => { allMenuItemsById[item.id] = item; }));
+        // Flat lookup of every menu item by id, used to refresh quantity controls anywhere on the page.
+        // Rebuilt each time loadRestaurants() runs.
+        let allMenuItemsById = {};
 
-        // Order lifecycle stages — status is derived from real elapsed time since placement,
-        // so it stays correct across view switches, page reloads and multiple concurrent orders.
-        const ORDER_STAGES = [
-            { key: 1, at: 0,     progress: 25,  title: "Order confirmed!", subtitle: "Restaurant is reviewing your order", icon: "fa-solid fa-receipt" },
-            { key: 2, at: 4000,  progress: 50,  title: "Kitchen is preparing your food", subtitle: "Estimated delivery in <strong class='text-slate-800'>18 mins</strong>", icon: "fa-solid fa-utensils" },
-            { key: 3, at: 9000,  progress: 80,  title: "Courier is on the way to you!", subtitle: "Estimated arrival in <strong class='text-brand-600 font-bold'>6 mins</strong>", icon: "fa-solid fa-motorcycle" },
-            { key: 4, at: 16000, progress: 100, title: "Delivered! Enjoy your meal 🍽️", subtitle: "Thank you for choosing <strong class='text-brand-600'>BiteSwift</strong>", icon: "fa-solid fa-circle-check text-emerald-500" }
-        ];
+        async function loadRestaurants() {
+            const res = await fetch('/api/restaurants');
+            if (!res.ok) throw new Error('Failed to load restaurants');
+            restaurants = await res.json();
+            allMenuItemsById = {};
+            restaurants.forEach(r => r.menu.forEach(item => { allMenuItemsById[item.id] = item; }));
+        }
+
+        // Order status is now set by an admin (see admin.html) rather than a client-side timer —
+        // this just maps each server status to how the tracker/order list should display it.
+        const STATUS_META = {
+            confirmed:   { progress: 25,  step: 1, title: "Order confirmed!", subtitle: "Restaurant is reviewing your order", icon: "fa-solid fa-receipt" },
+            preparing:   { progress: 50,  step: 2, title: "Kitchen is preparing your food", subtitle: "Your courier will be assigned shortly", icon: "fa-solid fa-utensils" },
+            on_the_way:  { progress: 80,  step: 3, title: "Courier is on the way to you!", subtitle: "Hang tight, it won't be long now", icon: "fa-solid fa-motorcycle" },
+            delivered:   { progress: 100, step: 4, title: "Delivered! Enjoy your meal 🍽️", subtitle: "Thank you for choosing <strong class='text-brand-600'>BiteSwift</strong>", icon: "fa-solid fa-circle-check text-emerald-500" },
+            cancelled:   { progress: 100, step: 0, title: "Order cancelled", subtitle: "This order was cancelled by the restaurant", icon: "fa-solid fa-circle-xmark text-red-500" }
+        };
 
         // ---- Persistence helpers (localStorage) ----
         function loadCart() {
@@ -472,11 +402,13 @@
         function saveCart() {
             try { localStorage.setItem('biteswift_cart', JSON.stringify(cart)); } catch (e) {}
         }
-        function loadOrders() {
-            try { return JSON.parse(localStorage.getItem('biteswift_orders')) || []; } catch (e) { return []; }
+        // Orders themselves now live server-side (so an admin can see/update them) — each browser
+        // just remembers which order IDs *it* placed, so "Your Orders" can fetch their live status.
+        function loadMyOrderIds() {
+            try { return JSON.parse(localStorage.getItem('biteswift_my_order_ids')) || []; } catch (e) { return []; }
         }
-        function saveOrders() {
-            try { localStorage.setItem('biteswift_orders', JSON.stringify(orders)); } catch (e) {}
+        function saveMyOrderIds() {
+            try { localStorage.setItem('biteswift_my_order_ids', JSON.stringify(myOrderIds)); } catch (e) {}
         }
         function loadSavedAddresses() {
             try {
@@ -505,25 +437,37 @@
 
         // Application State
         let cart = [];
-        let orders = [];
+        let myOrderIds = [];
         let savedAddresses = loadSavedAddresses();
         let currentAddress = savedAddresses[0];
         let currentRestaurant = null;
         let currentOrderId = null;
         let promoApplied = false;
+        let promoInfo = null; // { code, type: 'percent'|'flat', value } once a valid code is applied
         let activeCategory = "All";
         let searchQuery = "";
         let activeView = "restaurants";
         let trackerInterval = null;
 
         // Initialize App on Load
-        window.onload = function() {
+        window.onload = async function() {
             cart = loadCart();
-            orders = loadOrders();
+            myOrderIds = loadMyOrderIds();
             currentAddress = loadCurrentAddress();
             updateCartBadge();
             updateAddressLabels();
-            renderRestaurants(restaurants);
+            try {
+                await loadRestaurants();
+                renderRestaurants(restaurants);
+            } catch (e) {
+                document.getElementById('restaurant-grid').innerHTML = `
+                    <div class="col-span-full text-center py-16 bg-white rounded-3xl border border-slate-200 space-y-3">
+                        <div class="text-slate-300 text-5xl"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                        <h4 class="font-bold text-slate-700">Couldn't load restaurants</h4>
+                        <p class="text-xs text-slate-400">Please refresh the page to try again.</p>
+                    </div>
+                `;
+            }
         };
 
         // Render Restaurants Listing
@@ -899,16 +843,32 @@
             }
         }
 
-        // Apply Promo Code
-        function applyPromo() {
+        // Apply Promo Code — validated server-side so an admin's promo changes take effect instantly
+        async function applyPromo() {
             const code = document.getElementById("promo-input").value.trim().toUpperCase();
-            if (code === "FIRSTBITE") {
-                promoApplied = true;
-                document.getElementById("promo-discount-row").classList.remove("hidden");
-                showToast("Promo code FIRSTBITE applied successfully! (50% OFF)");
-                calculateTotals();
-            } else {
-                showToast("Invalid promo code. Try 'FIRSTBITE'");
+            if (!code) return;
+            try {
+                const res = await fetch('/api/validate-promo', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code })
+                });
+                const data = await res.json();
+                if (data.valid) {
+                    promoApplied = true;
+                    promoInfo = { code: data.code, type: data.type, value: data.value };
+                    document.getElementById("promo-discount-row").classList.remove("hidden");
+                    const label = data.type === 'percent' ? `${data.value}% OFF` : `${fmt(data.value)} OFF`;
+                    showToast(`Promo code ${data.code} applied successfully! (${label})`);
+                    calculateTotals();
+                } else {
+                    promoApplied = false;
+                    promoInfo = null;
+                    document.getElementById("promo-discount-row").classList.add("hidden");
+                    showToast(`Invalid promo code '${code}'`);
+                }
+            } catch (e) {
+                showToast("Couldn't validate promo code — try again");
             }
         }
 
@@ -916,7 +876,10 @@
         function getTotals() {
             const subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
             const delivery = subtotal > 0 ? 2400 : 0;
-            const discount = promoApplied ? subtotal * 0.50 : 0;
+            let discount = 0;
+            if (promoApplied && promoInfo) {
+                discount = promoInfo.type === 'percent' ? subtotal * (promoInfo.value / 100) : promoInfo.value;
+            }
             const total = Math.max(0, subtotal + delivery - discount);
             return { subtotal, delivery, discount, total };
         }
@@ -992,33 +955,42 @@
         }
 
         // ---- Checkout & Order History ----
-        function generateOrderId() {
-            return 'BS-' + Math.floor(1000 + Math.random() * 9000);
-        }
-
-        function checkoutOrder() {
+        async function checkoutOrder() {
             if (cart.length === 0) {
                 showToast("Your cart is empty!");
                 return;
             }
 
             const totals = getTotals();
-            const order = {
-                id: generateOrderId(),
+            const payload = {
                 items: cart.map(i => ({ id: i.id, name: i.name, price: i.price, qty: i.qty })),
                 subtotal: totals.subtotal,
                 delivery: totals.delivery,
                 discount: totals.discount,
                 total: totals.total,
-                address: currentAddress.address,
-                placedAt: Date.now()
+                address: currentAddress.address
             };
 
-            orders.unshift(order);
-            saveOrders();
+            let order;
+            try {
+                const res = await fetch('/api/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) throw new Error('Order failed');
+                order = await res.json();
+            } catch (e) {
+                showToast("Couldn't place order — please try again");
+                return;
+            }
+
+            myOrderIds.unshift(order.id);
+            saveMyOrderIds();
 
             cart = [];
             promoApplied = false;
+            promoInfo = null;
             saveCart();
             updateCartBadge();
             document.getElementById("promo-input").value = "";
@@ -1029,46 +1001,40 @@
             showToast("Order placed! Tracking your delivery...");
         }
 
-        function getStageIndex(order) {
-            const elapsed = Date.now() - order.placedAt;
-            let idx = 1;
-            ORDER_STAGES.forEach(s => { if (elapsed >= s.at) idx = s.key; });
-            return idx;
-        }
-
-        function isOrderDelivered(order) {
-            return getStageIndex(order) === ORDER_STAGES.length;
-        }
-
-        // Open (or resume) the live tracker for a given order, driven by real elapsed time
+        // Open (or resume) the live tracker for a given order. Status now comes from the server
+        // (an admin moves it through confirmed -> preparing -> on_the_way -> delivered), so this
+        // polls rather than computing anything from a local timer.
         function openOrderTracker(orderId) {
             currentOrderId = orderId;
             switchView('tracker');
             renderTrackerState();
             clearInterval(trackerInterval);
-            trackerInterval = setInterval(renderTrackerState, 1000);
+            trackerInterval = setInterval(renderTrackerState, 4000);
         }
 
-        function renderTrackerState() {
-            const order = orders.find(o => o.id === currentOrderId);
-            if (!order) {
+        async function renderTrackerState() {
+            let order;
+            try {
+                const res = await fetch(`/api/orders/${encodeURIComponent(currentOrderId)}`);
+                if (!res.ok) throw new Error('Not found');
+                order = await res.json();
+            } catch (e) {
                 clearInterval(trackerInterval);
                 return;
             }
 
-            const stageIndex = getStageIndex(order);
-            const stage = ORDER_STAGES[stageIndex - 1];
+            const stage = STATUS_META[order.status] || STATUS_META.confirmed;
 
             document.getElementById("tracker-order-id").textContent = `Live Order #${order.id}`;
             document.getElementById("tracker-progress").style.width = stage.progress + "%";
             document.getElementById("tracker-title").textContent = stage.title;
             document.getElementById("tracker-subtitle").innerHTML = stage.subtitle;
             document.getElementById("tracker-main-icon").className = stage.icon;
-            updateStepStyles(stageIndex);
+            updateStepStyles(stage.step);
 
-            if (stageIndex === ORDER_STAGES.length) {
+            if (order.status === 'delivered' || order.status === 'cancelled') {
                 clearInterval(trackerInterval);
-                showToast("Order delivered successfully!");
+                if (order.status === 'delivered') showToast("Order delivered successfully!");
             }
         }
 
@@ -1083,10 +1049,33 @@
             }
         }
 
-        function renderOrdersList() {
+        async function renderOrdersList() {
             const container = document.getElementById("orders-list");
-            container.innerHTML = "";
 
+            if (myOrderIds.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-16 bg-white rounded-3xl border border-slate-200 space-y-3">
+                        <div class="text-slate-300 text-5xl"><i class="fa-solid fa-receipt"></i></div>
+                        <h4 class="font-bold text-slate-700">No orders yet</h4>
+                        <p class="text-xs text-slate-400">Your placed orders will show up here.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = `<div class="text-center py-10 text-sm text-slate-400">Loading your orders…</div>`;
+
+            const results = await Promise.all(myOrderIds.map(async id => {
+                try {
+                    const res = await fetch(`/api/orders/${encodeURIComponent(id)}`);
+                    return res.ok ? await res.json() : null;
+                } catch (e) {
+                    return null;
+                }
+            }));
+            const orders = results.filter(Boolean).sort((a, b) => b.placedAt - a.placedAt);
+
+            container.innerHTML = "";
             if (orders.length === 0) {
                 container.innerHTML = `
                     <div class="text-center py-16 bg-white rounded-3xl border border-slate-200 space-y-3">
@@ -1099,7 +1088,13 @@
             }
 
             orders.forEach(order => {
-                const delivered = isOrderDelivered(order);
+                const stage = STATUS_META[order.status] || STATUS_META.confirmed;
+                const badgeClass = order.status === 'delivered' ? 'bg-emerald-50 text-emerald-600'
+                    : order.status === 'cancelled' ? 'bg-red-50 text-red-600'
+                    : 'bg-brand-50 text-brand-600';
+                const badgeLabel = order.status === 'delivered' ? 'Delivered'
+                    : order.status === 'cancelled' ? 'Cancelled'
+                    : 'In Progress';
                 const itemCount = order.items.reduce((s, i) => s + i.qty, 0);
                 const card = document.createElement("div");
                 card.className = "bg-white rounded-2xl border border-slate-200 p-4 flex items-center justify-between gap-4 cursor-pointer hover:border-brand-300 transition shadow-2xs";
@@ -1108,7 +1103,7 @@
                     <div class="space-y-1 min-w-0">
                         <div class="flex items-center gap-2 flex-wrap">
                             <h4 class="font-bold text-sm text-slate-900">#${order.id}</h4>
-                            <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${delivered ? 'bg-emerald-50 text-emerald-600' : 'bg-brand-50 text-brand-600'}">${delivered ? 'Delivered' : 'In Progress'}</span>
+                            <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${badgeClass}">${badgeLabel}</span>
                         </div>
                         <p class="text-xs text-slate-500">${itemCount} item${itemCount > 1 ? 's' : ''} • ${new Date(order.placedAt).toLocaleString()}</p>
                         <p class="text-xs text-slate-400 truncate max-w-xs">${order.items.map(i => i.name).join(', ')}</p>

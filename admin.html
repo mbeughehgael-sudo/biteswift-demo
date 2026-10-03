@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>BiteSwift Admin</title>
+    <link href="assets/css/tailwind.css" rel="stylesheet">
+    <link href="assets/vendor/fonts/inter.css" rel="stylesheet">
+    <link href="assets/vendor/fontawesome/css/all.min.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #f8fafc; }
+        .tab-btn.active { background: #0f172a; color: #fff; }
+    </style>
+</head>
+<body>
+<div class="min-h-screen">
+
+    <!-- Login Screen -->
+    <div id="login-screen" class="min-h-screen flex items-center justify-center p-4">
+        <div class="w-full max-w-sm bg-white rounded-3xl border border-slate-200 shadow-sm p-8 space-y-6">
+            <div class="text-center space-y-1">
+                <div class="inline-flex bg-brand-500 text-white w-12 h-12 rounded-xl items-center justify-center text-xl mb-2">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+                <h1 class="text-xl font-bold text-slate-900">BiteSwift Admin</h1>
+                <p class="text-sm text-slate-500">Sign in to manage the live app</p>
+            </div>
+            <form id="login-form" class="space-y-3">
+                <input id="login-password" type="password" placeholder="Admin password" autocomplete="current-password"
+                    class="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl text-sm focus:outline-none focus:border-brand-500">
+                <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white py-3 rounded-xl font-semibold text-sm transition">
+                    Sign In
+                </button>
+                <p id="login-error" class="hidden text-xs text-red-600 text-center"></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard" class="hidden">
+        <header class="bg-white border-b border-slate-200 sticky top-0 z-10">
+            <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <div class="bg-brand-500 text-white w-9 h-9 rounded-lg flex items-center justify-center">
+                        <i class="fa-solid fa-bolt"></i>
+                    </div>
+                    <h1 class="font-bold text-lg text-slate-900">BiteSwift <span class="text-brand-500">Admin</span></h1>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <a href="index.html" target="_blank" class="text-sm text-slate-500 hover:text-brand-600 font-medium">View site ↗</a>
+                    <button onclick="logout()" class="text-sm font-semibold text-slate-600 hover:text-red-600 bg-slate-100 hover:bg-red-50 px-3 py-1.5 rounded-lg transition">
+                        Log out
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+            <!-- Tabs -->
+            <div class="flex items-center gap-2 overflow-x-auto">
+                <button data-tab="analytics" onclick="switchTab('analytics')" class="tab-btn active px-4 py-2 rounded-xl text-sm font-semibold bg-white border border-slate-200 whitespace-nowrap transition">
+                    <i class="fa-solid fa-chart-line mr-1.5"></i>Analytics
+                </button>
+                <button data-tab="orders" onclick="switchTab('orders')" class="tab-btn px-4 py-2 rounded-xl text-sm font-semibold bg-white border border-slate-200 whitespace-nowrap transition">
+                    <i class="fa-solid fa-receipt mr-1.5"></i>Orders
+                </button>
+                <button data-tab="restaurants" onclick="switchTab('restaurants')" class="tab-btn px-4 py-2 rounded-xl text-sm font-semibold bg-white border border-slate-200 whitespace-nowrap transition">
+                    <i class="fa-solid fa-store mr-1.5"></i>Restaurants & Menus
+                </button>
+                <button data-tab="promos" onclick="switchTab('promos')" class="tab-btn px-4 py-2 rounded-xl text-sm font-semibold bg-white border border-slate-200 whitespace-nowrap transition">
+                    <i class="fa-solid fa-tag mr-1.5"></i>Promo Codes
+                </button>
+            </div>
+
+            <!-- Analytics Tab -->
+            <section id="tab-analytics" class="space-y-4">
+                <div id="analytics-cards" class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- JS -->
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-white rounded-2xl border border-slate-200 p-5">
+                        <h3 class="font-bold text-sm text-slate-900 mb-3">Top Items</h3>
+                        <div id="top-items-list" class="space-y-2 text-sm"></div>
+                    </div>
+                    <div class="bg-white rounded-2xl border border-slate-200 p-5">
+                        <h3 class="font-bold text-sm text-slate-900 mb-3">Orders by Status</h3>
+                        <div id="status-breakdown-list" class="space-y-2 text-sm"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Orders Tab -->
+            <section id="tab-orders" class="hidden space-y-3">
+                <div class="flex items-center justify-between">
+                    <h2 class="font-bold text-slate-900">All Orders</h2>
+                    <button onclick="loadOrders()" class="text-xs font-semibold text-slate-500 hover:text-brand-600">
+                        <i class="fa-solid fa-rotate-right mr-1"></i>Refresh
+                    </button>
+                </div>
+                <div id="orders-table" class="space-y-3"></div>
+            </section>
+
+            <!-- Restaurants Tab -->
+            <section id="tab-restaurants" class="hidden space-y-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="font-bold text-slate-900">Restaurants & Menus</h2>
+                    <button onclick="openNewRestaurantForm()" class="bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-3 py-2 rounded-lg transition">
+                        <i class="fa-solid fa-plus mr-1"></i>Add Restaurant
+                    </button>
+                </div>
+                <div id="new-restaurant-form-container"></div>
+                <div id="restaurants-list" class="space-y-4"></div>
+            </section>
+
+            <!-- Promos Tab -->
+            <section id="tab-promos" class="hidden space-y-4">
+                <h2 class="font-bold text-slate-900">Promo Codes</h2>
+                <form id="new-promo-form" class="bg-white rounded-2xl border border-slate-200 p-4 flex flex-wrap gap-2 items-end">
+                    <div class="flex-1 min-w-[120px]">
+                        <label class="text-xs font-semibold text-slate-500">Code</label>
+                        <input id="promo-code-input" required class="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-sm uppercase" placeholder="SUMMER25">
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-slate-500">Type</label>
+                        <select id="promo-type-input" class="bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-sm">
+                            <option value="percent">% off</option>
+                            <option value="flat">Flat FCFA off</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-slate-500">Value</label>
+                        <input id="promo-value-input" required type="number" min="1" class="w-28 bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-sm" placeholder="25">
+                    </div>
+                    <button type="submit" class="bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition">
+                        Add Promo
+                    </button>
+                </form>
+                <div id="promos-list" class="space-y-2"></div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl transform translate-y-20 opacity-0 transition-all duration-300 flex items-center space-x-3 text-sm max-w-sm">
+        <i class="fa-solid fa-circle-check text-brand-500 text-lg flex-shrink-0"></i>
+        <span id="toast-message" class="truncate">Notification message</span>
+    </div>
+
+    <script>
+        function fmt(amount) {
+            return `${Math.round(amount).toLocaleString('en-US')} FCFA`;
+        }
+
+        function showToast(msg, isError) {
+            const toast = document.getElementById("toast");
+            const icon = toast.querySelector('i');
+            icon.className = isError ? "fa-solid fa-circle-exclamation text-red-400 text-lg flex-shrink-0" : "fa-solid fa-circle-check text-brand-500 text-lg flex-shrink-0";
+            document.getElementById("toast-message").textContent = msg;
+            toast.classList.remove("translate-y-20", "opacity-0");
+            setTimeout(() => toast.classList.add("translate-y-20", "opacity-0"), 3000);
+        }
+
+        async function api(path, options = {}) {
+            const res = await fetch(path, {
+                ...options,
+                headers: { 'Content-Type': 'application/json', ...(options.headers || {}) }
+            });
+            if (res.status === 401) {
+                showDashboard(false);
+                throw new Error('Unauthorized');
+            }
+            if (!res.ok) {
+                const body = await res.json().catch(() => ({}));
+                throw new Error(body.error || `Request failed (${res.status})`);
+            }
+            if (res.status === 204) return null;
+            return res.json();
+        }
+
+        // ---- Auth ----
+        async function checkSession() {
+            try {
+                const data = await api('/api/admin/session');
+                showDashboard(data.authenticated);
+            } catch (e) {
+                showDashboard(false);
+            }
+        }
+
+        function showDashboard(authenticated) {
+            document.getElementById('login-screen').classList.toggle('hidden', authenticated);
+            document.getElementById('dashboard').classList.toggle('hidden', !authenticated);
+            if (authenticated) switchTab('analytics');
+        }
+
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const password = document.getElementById('login-password').value;
+            const errorEl = document.getElementById('login-error');
+            errorEl.classList.add('hidden');
+            try {
+                await api('/api/admin/login', { method: 'POST', body: JSON.stringify({ password }) });
+                document.getElementById('login-password').value = '';
+                showDashboard(true);
+            } catch (err) {
+                errorEl.textContent = err.message || 'Login failed';
+                errorEl.classList.remove('hidden');
+            }
+        });
+
+        async function logout() {
+            try { await api('/api/admin/logout', { method: 'POST' }); } catch (e) {}
+            showDashboard(false);
+        }
+
+        // ---- Tabs ----
+        function switchTab(name) {
+            ['analytics', 'orders', 'restaurants', 'promos'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.toggle('hidden', t !== name);
+                document.querySelector(`.tab-btn[data-tab="${t}"]`).classList.toggle('active', t === name);
+            });
+            if (name === 'analytics') loadAnalytics();
+            if (name === 'orders') loadOrders();
+            if (name === 'restaurants') loadRestaurants();
+            if (name === 'promos') loadPromos();
+        }
+
+        // ---- Analytics ----
+        async function loadAnalytics() {
+            let data;
+            try { data = await api('/api/admin/analytics'); } catch (e) { return; }
+
+            document.getElementById('analytics-cards').innerHTML = `
+                ${statCard('fa-receipt', 'Total Orders', data.totalOrders)}
+                ${statCard('fa-money-bill-wave', 'Total Revenue', fmt(data.totalRevenue))}
+                ${statCard('fa-utensils', 'Preparing Now', data.byStatus.preparing || 0)}
+                ${statCard('fa-motorcycle', 'On The Way', data.byStatus.on_the_way || 0)}
+            `;
+
+            document.getElementById('top-items-list').innerHTML = data.topItems.length
+                ? data.topItems.map(i => `
+                    <div class="flex items-center justify-between py-1.5 border-b border-slate-100 last:border-0">
+                        <span class="text-slate-700">${i.name}</span>
+                        <span class="font-bold text-slate-900">${i.qty}</span>
+                    </div>
+                `).join('')
+                : `<p class="text-slate-400">No orders yet.</p>`;
+
+            const statusLabels = { confirmed: 'Confirmed', preparing: 'Preparing', on_the_way: 'On the way', delivered: 'Delivered', cancelled: 'Cancelled' };
+            const entries = Object.entries(data.byStatus);
+            document.getElementById('status-breakdown-list').innerHTML = entries.length
+                ? entries.map(([status, count]) => `
+                    <div class="flex items-center justify-between py-1.5 border-b border-slate-100 last:border-0">
+                        <span class="text-slate-700">${statusLabels[status] || status}</span>
+                        <span class="font-bold text-slate-900">${count}</span>
+                    </div>
+                `).join('')
+                : `<p class="text-slate-400">No orders yet.</p>`;
+        }
+
+        function statCard(icon, label, value) {
+            return `
+                <div class="bg-white rounded-2xl border border-slate-200 p-4 space-y-1">
+                    <div class="text-brand-500"><i class="fa-solid ${icon}"></i></div>
+                    <div class="text-xl font-bold text-slate-900">${value}</div>
+                    <div class="text-xs text-slate-500">${label}</div>
+                </div>
+            `;
+        }
+
+        // ---- Orders ----
+        const STATUS_OPTIONS = ['confirmed', 'preparing', 'on_the_way', 'delivered', 'cancelled'];
+        const STATUS_LABELS = { confirmed: 'Confirmed', preparing: 'Preparing', on_the_way: 'On the way', delivered: 'Delivered', cancelled: 'Cancelled' };
+
+        async function loadOrders() {
+            const container = document.getElementById('orders-table');
+            let orders;
+            try { orders = await api('/api/admin/orders'); } catch (e) { return; }
+
+            if (orders.length === 0) {
+                container.innerHTML = `<p class="text-sm text-slate-400 py-8 text-center">No orders placed yet.</p>`;
+                return;
+            }
+
+            container.innerHTML = orders.map(o => `
+                <div class="bg-white rounded-2xl border border-slate-200 p-4 flex flex-wrap items-center justify-between gap-3">
+                    <div class="min-w-0 space-y-1">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="font-bold text-sm text-slate-900">#${o.id}</span>
+                            <span class="text-xs text-slate-400">${new Date(o.placedAt).toLocaleString()}</span>
+                        </div>
+                        <p class="text-xs text-slate-500 truncate max-w-md">${o.items.map(i => `${i.qty}× ${i.name}`).join(', ')}</p>
+                        <p class="text-xs text-slate-400 truncate max-w-md"><i class="fa-solid fa-location-dot mr-1"></i>${o.address || '—'}</p>
+                    </div>
+                    <div class="flex items-center gap-3 flex-shrink-0">
+                        <span class="font-bold text-brand-600 text-sm">${fmt(o.total)}</span>
+                        <select onchange="updateOrderStatus('${o.id}', this.value)" class="bg-slate-50 border border-slate-200 text-xs font-semibold px-2 py-1.5 rounded-lg">
+                            ${STATUS_OPTIONS.map(s => `<option value="${s}" ${s === o.status ? 'selected' : ''}>${STATUS_LABELS[s]}</option>`).join('')}
+                        </select>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function updateOrderStatus(id, status) {
+            try {
+                await api(`/api/admin/orders/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify({ status }) });
+                showToast(`Order #${id} marked as ${STATUS_LABELS[status]}`);
+            } catch (e) {
+                showToast(e.message, true);
+                loadOrders();
+            }
+        }
+
+        // ---- Restaurants & Menus ----
+        let restaurantsCache = [];
+
+        async function loadRestaurants() {
+            try { restaurantsCache = await api('/api/admin/restaurants'); } catch (e) { return; }
+            renderRestaurants();
+        }
+
+        function renderRestaurants() {
+            const container = document.getElementById('restaurants-list');
+            if (restaurantsCache.length === 0) {
+                container.innerHTML = `<p class="text-sm text-slate-400 py-8 text-center">No restaurants yet.</p>`;
+                return;
+            }
+            container.innerHTML = restaurantsCache.map(r => restaurantCardHTML(r)).join('');
+        }
+
+        function restaurantCardHTML(r) {
+            return `
+                <div class="bg-white rounded-2xl border border-slate-200 p-5 space-y-4" data-restaurant-id="${r.id}">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        ${field('Name', 'name', r.name)}
+                        ${field('Category', 'category', r.category)}
+                        ${field('Rating', 'rating', r.rating)}
+                        ${field('Reviews label', 'reviews', r.reviews)}
+                        ${field('Delivery time', 'time', r.time)}
+                        ${field('Delivery fee label', 'deliveryFee', r.deliveryFee)}
+                        ${field('Image path', 'image', r.image)}
+                        ${field('Tag', 'tag', r.tag)}
+                    </div>
+
+                    <div class="border-t border-slate-100 pt-3 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wide">Menu Items</h4>
+                            <button type="button" onclick="addMenuItemRow(${r.id})" class="text-xs font-semibold text-brand-600 hover:text-brand-700">
+                                <i class="fa-solid fa-plus mr-1"></i>Add item
+                            </button>
+                        </div>
+                        <div data-menu-container class="space-y-2">
+                            ${r.menu.map(item => menuItemRowHTML(item)).join('')}
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+                        <button type="button" onclick="deleteRestaurantConfirm(${r.id})" class="text-xs font-semibold text-red-600 hover:text-red-700">
+                            <i class="fa-solid fa-trash mr-1"></i>Delete Restaurant
+                        </button>
+                        <button type="button" onclick="saveRestaurant(${r.id})" class="bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-4 py-2 rounded-lg transition">
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function field(label, key, value) {
+            return `
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-500">${label}</label>
+                    <input data-field="${key}" value="${(value ?? '').toString().replace(/"/g, '&quot;')}"
+                        class="w-full bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-sm">
+                </div>
+            `;
+        }
+
+        function menuItemRowHTML(item) {
+            const id = item.id || (Date.now() + Math.floor(Math.random() * 1000));
+            return `
+                <div class="grid grid-cols-12 gap-2 items-center bg-slate-50 rounded-lg p-2" data-menu-item data-item-id="${id}">
+                    <input data-mfield="name" value="${(item.name || '').replace(/"/g, '&quot;')}" placeholder="Dish name" class="col-span-3 bg-white border border-slate-200 px-2 py-1.5 rounded text-xs">
+                    <input data-mfield="desc" value="${(item.desc || '').replace(/"/g, '&quot;')}" placeholder="Description" class="col-span-4 bg-white border border-slate-200 px-2 py-1.5 rounded text-xs">
+                    <input data-mfield="price" type="number" value="${item.price || 0}" placeholder="Price" class="col-span-2 bg-white border border-slate-200 px-2 py-1.5 rounded text-xs">
+                    <input data-mfield="image" value="${(item.image || '').replace(/"/g, '&quot;')}" placeholder="Image path" class="col-span-2 bg-white border border-slate-200 px-2 py-1.5 rounded text-xs">
+                    <button type="button" onclick="this.closest('[data-menu-item]').remove()" class="col-span-1 text-red-500 hover:text-red-700 text-xs">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            `;
+        }
+
+        function addMenuItemRow(restaurantId) {
+            const card = document.querySelector(`[data-restaurant-id="${restaurantId}"]`);
+            const container = card.querySelector('[data-menu-container]');
+            container.insertAdjacentHTML('beforeend', menuItemRowHTML({ id: Date.now() + Math.floor(Math.random() * 1000), name: '', desc: '', price: 0, image: '' }));
+        }
+
+        async function saveRestaurant(id) {
+            const card = document.querySelector(`[data-restaurant-id="${id}"]`);
+            const updated = { id };
+            card.querySelectorAll('[data-field]').forEach(input => {
+                updated[input.dataset.field] = input.value;
+            });
+            updated.rating = Number(updated.rating) || 0;
+
+            updated.menu = Array.from(card.querySelectorAll('[data-menu-item]')).map(row => ({
+                id: Number(row.dataset.itemId),
+                name: row.querySelector('[data-mfield="name"]').value,
+                desc: row.querySelector('[data-mfield="desc"]').value,
+                price: Number(row.querySelector('[data-mfield="price"]').value) || 0,
+                image: row.querySelector('[data-mfield="image"]').value
+            }));
+
+            try {
+                await api(`/api/admin/restaurants/${id}`, { method: 'PUT', body: JSON.stringify(updated) });
+                showToast(`${updated.name} saved`);
+                loadRestaurants();
+            } catch (e) {
+                showToast(e.message, true);
+            }
+        }
+
+        async function deleteRestaurantConfirm(id) {
+            if (!confirm('Delete this restaurant and its whole menu? This cannot be undone.')) return;
+            try {
+                await api(`/api/admin/restaurants/${id}`, { method: 'DELETE' });
+                showToast('Restaurant deleted');
+                loadRestaurants();
+            } catch (e) {
+                showToast(e.message, true);
+            }
+        }
+
+        function openNewRestaurantForm() {
+            const container = document.getElementById('new-restaurant-form-container');
+            if (container.innerHTML.trim()) { container.innerHTML = ''; return; }
+            container.innerHTML = `
+                <div class="bg-white rounded-2xl border border-brand-200 p-5 space-y-3">
+                    <h3 class="font-bold text-sm text-slate-900">New Restaurant</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <input id="new-r-name" placeholder="Name" class="bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-sm">
+                        <input id="new-r-category" placeholder="Category (e.g. Burger)" class="bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-sm">
+                        <input id="new-r-rating" type="number" step="0.1" placeholder="Rating (e.g. 4.8)" class="bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-sm">
+                        <input id="new-r-reviews" placeholder="Reviews label (e.g. 500)" class="bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-sm">
+                        <input id="new-r-time" placeholder="Delivery time (e.g. 20-30 min)" class="bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-sm">
+                        <input id="new-r-deliveryFee" placeholder="Delivery fee (e.g. Free)" class="bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-sm">
+                        <input id="new-r-image" placeholder="Image path (e.g. images/foo.jpg)" class="bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-sm">
+                        <input id="new-r-tag" placeholder="Tag (e.g. New)" class="bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-sm">
+                    </div>
+                    <div class="flex justify-end gap-2">
+                        <button type="button" onclick="document.getElementById('new-restaurant-form-container').innerHTML=''" class="text-xs font-semibold text-slate-500 px-3 py-2">Cancel</button>
+                        <button type="button" onclick="createRestaurant()" class="bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold px-4 py-2 rounded-lg transition">Create</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function createRestaurant() {
+            const payload = {
+                name: document.getElementById('new-r-name').value,
+                category: document.getElementById('new-r-category').value,
+                rating: Number(document.getElementById('new-r-rating').value) || 5.0,
+                reviews: document.getElementById('new-r-reviews').value || '0',
+                time: document.getElementById('new-r-time').value || '20-30 min',
+                deliveryFee: document.getElementById('new-r-deliveryFee').value || 'Free',
+                image: document.getElementById('new-r-image').value,
+                tag: document.getElementById('new-r-tag').value,
+                menu: []
+            };
+            if (!payload.name || !payload.category) {
+                showToast('Name and category are required', true);
+                return;
+            }
+            try {
+                await api('/api/admin/restaurants', { method: 'POST', body: JSON.stringify(payload) });
+                document.getElementById('new-restaurant-form-container').innerHTML = '';
+                showToast(`${payload.name} created`);
+                loadRestaurants();
+            } catch (e) {
+                showToast(e.message, true);
+            }
+        }
+
+        // ---- Promos ----
+        async function loadPromos() {
+            let promos;
+            try { promos = await api('/api/admin/promos'); } catch (e) { return; }
+            const container = document.getElementById('promos-list');
+            container.innerHTML = promos.length === 0
+                ? `<p class="text-sm text-slate-400 py-8 text-center">No promo codes yet.</p>`
+                : promos.map(p => `
+                    <div class="bg-white rounded-2xl border border-slate-200 p-4 flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <span class="font-mono font-bold text-slate-900 bg-slate-100 px-2 py-1 rounded">${p.code}</span>
+                            <span class="text-sm text-slate-600">${p.type === 'percent' ? p.value + '% off' : fmt(p.value) + ' off'}</span>
+                            <span class="text-xs font-bold uppercase px-2 py-0.5 rounded-full ${p.active ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'}">${p.active ? 'Active' : 'Inactive'}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="togglePromo('${p.code}', ${p.active}, '${p.type}', ${p.value})" class="text-xs font-semibold text-slate-500 hover:text-brand-600">
+                                ${p.active ? 'Deactivate' : 'Activate'}
+                            </button>
+                            <button onclick="deletePromoConfirm('${p.code}')" class="text-xs font-semibold text-red-600 hover:text-red-700">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+        }
+
+        document.getElementById('new-promo-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payload = {
+                code: document.getElementById('promo-code-input').value.trim().toUpperCase(),
+                type: document.getElementById('promo-type-input').value,
+                value: Number(document.getElementById('promo-value-input').value),
+                active: true
+            };
+            if (!payload.code || !(payload.value > 0)) {
+                showToast('Enter a code and a positive value', true);
+                return;
+            }
+            try {
+                await api('/api/admin/promos', { method: 'POST', body: JSON.stringify(payload) });
+                e.target.reset();
+                showToast(`Promo ${payload.code} created`);
+                loadPromos();
+            } catch (err) {
+                showToast(err.message, true);
+            }
+        });
+
+        async function togglePromo(code, currentlyActive, type, value) {
+            try {
+                await api('/api/admin/promos', { method: 'POST', body: JSON.stringify({ code, type, value, active: !currentlyActive }) });
+                loadPromos();
+            } catch (e) {
+                showToast(e.message, true);
+            }
+        }
+
+        async function deletePromoConfirm(code) {
+            if (!confirm(`Delete promo code ${code}?`)) return;
+            try {
+                await api(`/api/admin/promos/${encodeURIComponent(code)}`, { method: 'DELETE' });
+                showToast(`Promo ${code} deleted`);
+                loadPromos();
+            } catch (e) {
+                showToast(e.message, true);
+            }
+        }
+
+        checkSession();
+    </script>
+</div>
+</body>
+</html>
